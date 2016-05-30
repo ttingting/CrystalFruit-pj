@@ -1,7 +1,14 @@
 var express = require('express');
+var bodyParser = require("body-parser");
 var app = express();
+var jsonfile = require('jsonfile');
+var file = 'C:/Users/Kyunglok/Desktop/Crystal Fruit/kyle/users.json'
+var fs = require("fs");
 
-app.set('port', (process.env.PORT || 5000));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+app.set('port', (process.env.PORT || 3000));
 
 app.use(express.static(__dirname + '/public'));
 
@@ -14,20 +21,43 @@ app.get('/contact', function (req, res) {
    res.sendFile( __dirname + "/" + "contact.html" );
 })
 
-app.get('/process_get', function (req, res) {
+app.get('/getUsers', function(req, res){    
+  res.setHeader('Content-Type', 'application/json');
+  jsonfile.readFile(file, function(err, obj) {
+    res.end(JSON.stringify(obj));
+    console.log(obj);
+  })
+});
 
-   // Prepare output in JSON format
-   response = {
-   		phone_number:req.query.phone_number,
-       first_name:req.query.first_name,
-       last_name:req.query.last_name,
-       interest1:req.query.interest1,
-       interest2:req.query.interest2,
-       interest3:req.query.interest3,
-       interest4:req.query.interest4
-   };
-   console.log(response);
-   res.end(JSON.stringify(response));
+function checkIfNumberExists(number){
+  jsonfile.readFile(file,function(err,obj){
+    for(var i=0; i<obj.users.length; i++){
+      if(number==obj.users[i].phone){
+        return true;
+      }
+    }
+  })
+  return false;
+}
+
+function pushNewData(newUserData){
+  jsonfile.readFile(file,function(err,obj){
+    var users = obj.users;
+    users.push(newUserData);
+    jsonfile.writeFileSync(file,users, {spaces:2});
+  })
+}
+
+
+app.post('/addNewUser', function(req,res){
+  if(checkIfNumberExists(req.body.phone)){
+    console.log("failed to register a new user");
+    res.json(req.body);
+  }
+  else{
+    pushNewData(req.body);
+    console.log("Registration success!");
+  }
 })
 
 var server = app.listen(app.get('port'), function () {
